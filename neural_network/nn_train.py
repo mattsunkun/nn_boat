@@ -11,7 +11,7 @@ import torch.nn.functional as F
 
 before_preprocessing = time.time()
 
-train_name = "hot-1/tmp" # 2018_2022-9"# "hot-1/20200101_20220923" 
+train_name = "hot-1/2018_2022-9"# "hot-1/20200101_20220923" 
 df = pd.read_csv("train-data/" + train_name + ".csv", header=None)
 name_net = "net-weight/" + train_name + ".pth"
 name_fig = "net-weight/" + train_name + ".png"
@@ -103,9 +103,19 @@ for epoch in range(max_epoch):
         loss.backward()
         optimizer.step()
         
-        predict_nth = predict_label.data.max(1)[1] #予測結果
-        answer_nth = torch.argmax(answer_label)
-        train_accuracy += torch.sum(predict_nth == answer_nth).item()
+        # predict_nth = predict_label.data.max(1)[1] #予測結果
+        predict_nth = predict_label.argmax(1)
+        # answer_nth = torch.argmax(answer_label)
+        answer_nth = answer_label.argmax(1)
+        """
+        print(predict_label)
+        print(answer_label)
+        print(predict_nth)
+        print(answer_nth)
+        print((predict_nth == answer_nth).sum().item())
+        """
+        # train_accuracy += torch.sum(predict_nth == answer_nth).item()
+        train_accuracy += (predict_nth == answer_nth).sum().item()
 
         
     train_loss_list.append(running_loss)
