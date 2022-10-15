@@ -1,3 +1,5 @@
+from cProfile import label
+from matplotlib.lines import lineStyles
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -11,7 +13,7 @@ import torch.nn.functional as F
 
 before_preprocessing = time.time()
 
-train_name = "hot-1/2018_2022-9"# "hot-1/20200101_20220923" 
+train_name = "hot-3/2018_2022-9"# "hot-1/20200101_20220923" 
 df = pd.read_csv("train-data/" + train_name + ".csv", header=None)
 name_net = "net-weight/" + train_name + ".pth"
 name_fig = "net-weight/" + train_name + ".png"
@@ -75,7 +77,7 @@ class Net(nn.Module):
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print( f"device: {device}" )
 
-max_epoch = 100
+max_epoch = 10
 net = Net().to(device)
 optimizer = torch.optim.Adam(net.parameters())
 criterion = F.cross_entropy
@@ -86,7 +88,9 @@ before_training = time.time()
 
 train_loss_list = []
 train_accuracy_list = []
+test_accuracy_list = []
 for epoch in range(max_epoch):
+    # train
     running_loss = 0.0
     train_accuracy = 0.0
     for batch in train_loader:
@@ -105,13 +109,16 @@ for epoch in range(max_epoch):
         
         # predict_nth = predict_label.data.max(1)[1] #予測結果
         predict_nth = predict_label.argmax(1)
-        # answer_nth = torch.argmax(answer_label)
+        # answer_nth = torch.argmax(answer_label, dim=1)
         answer_nth = answer_label.argmax(1)
+        
         """
         print(predict_label)
         print(answer_label)
+        
         print(predict_nth)
         print(answer_nth)
+        
         print((predict_nth == answer_nth).sum().item())
         """
         # train_accuracy += torch.sum(predict_nth == answer_nth).item()
@@ -120,30 +127,31 @@ for epoch in range(max_epoch):
         
     train_loss_list.append(running_loss)
     train_accuracy_list.append(train_accuracy/n_train)
+    # print(f"{shinchoku}/{max_epoch} , runnning_loss: {running_loss} , probablitiy: {train_accuracy/n_train}")
+    
+    # test
+    test_loss = 0.0
+    test_accuracy = 0.0
+    with torch.no_grad():
+        for batch in test_loader:
+            explanatory_variables, answer_label = batch
+            explanatory_variables = explanatory_variables.to(device)
+            answer_label = answer_label.to(device)
+            
+            predict_label = net(explanatory_variables)
+            loss = criterion(predict_label, answer_label)
+            test_loss += loss.item()
+            
+            predict_nth = predict_label.argmax(1) #予測結果
+            answer_nth = answer_label.argmax(1)
+            test_accuracy += (predict_nth == answer_nth).sum().item()
+    test_accuracy /= n_test
+    test_accuracy_list.append(test_accuracy)
+    print(f"{epoch+1}/{max_epoch}  train_loss: {running_loss}  train_accuracy: {train_accuracy/n_train}  "\
+          f"test_loss: {test_loss}  test_accuracy: {test_accuracy}")
 
 after_training = time.time()
 print(f"training time: {after_training - before_training}")
-before_testing = time.time()
-
-test_accuracy = 0.0
-with torch.no_grad():
-    for batch in test_loader:
-        explanatory_variables, answer_label = batch
-        explanatory_variables = explanatory_variables.to(device)
-        answer_label = answer_label.to(device)
-        
-        predict_label = net(explanatory_variables)
-        loss = criterion(predict_label, answer_label)
-        
-        predict_nth = predict_label.data.max(1)[1] #予測結果
-        answer_nth = torch.argmax(answer_label)
-        test_accuracy += torch.sum(predict_nth == answer_nth).item()
-
-
-test_accuracy /= n_test
-
-after_testing = time.time()
-print(f"testing time: {after_testing - before_testing}")
    
 if net_bool: 
     print(f"save model as: {name_net}")
@@ -154,9 +162,12 @@ print(f"test accuracy: {test_accuracy}")
 fig, ax = plt.subplots(ncols=1, nrows=2, facecolor="lightgray")
 
 plt.subplots_adjust(hspace=0.4)
-ax[0].set_title(f"train loss ( train time: {after_training - before_training} )")
-ax[0].plot(train_loss_list) 
-ax[1].set_title(f"train prob ( test prob: {test_accuracy} )")
-ax[1].plot(train_accuracy_list) 
+ax[0].set_title(f"train loss ( loss:{train_loss_list[-1]} )")
+ax[0].plot(train_loss_list, label="train", color="blue", linestyle="dashdot") 
+ax[1].set_title(f"prob ( test:{train_accuracy_list[-1]} train:{test_accuracy_list[-1]})")
+ax[1].plot(train_accuracy_list, label="train", color="blue", linestyle="dashdot") 
+ax[1].plot(test_accuracy_list, label="test", color="red", linestyle="solid")
+ax[0].legend()
+ax[1].legend()
 plt.savefig(name_fig)
 plt.show()
