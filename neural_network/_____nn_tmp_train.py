@@ -1,30 +1,25 @@
-import pickle
+from cProfile import label
 from matplotlib.lines import lineStyles
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 import scipy.stats
 import time
-import datetime
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 before_preprocessing = time.time()
+
 train_name = "hot-1/2018_2022-9"# "hot-1/20200101_20220923" 
 df = pd.read_csv("train-data/" + train_name + ".csv", header=None)
-dt_now = datetime.datetime.now()
-date_info = dt_now.strftime('__%Y_%m_%d_%H_%M_%S')
-name_net = "net-weight/" + train_name + date_info + ".pth"
-name_fig = "net-weight/" + train_name + date_info + ".png"
-net_bool = True
-cut_num_info = [i for i in range(6)]# [3] # weather
-player_cut_num_info = np.array( [7, 8, 9, 10, 11, 
-                                 12, 13, 14, 15, 16, 17, 19, 20, 21, 
-                                 22, 23, 24, 25, 26] )# np.array( [7, 8, 13, 14, 16, 17, 20, 21, 22] )
+name_net = "net-weight/" + train_name + ".pth"
+name_fig = "net-weight/" + train_name + ".png"
+net_bool = False
+cut_num_info = [3] # weather
+player_cut_num_info = np.array( [7, 8, 13, 14, 16, 17, 20, 21, 22] )
 
-print(f"###   {train_name + date_info}   ###")
-print(f"using data: {train_name}")
+
 def cut_info(func_cut_num_list: list, func_df=df) -> pd.DataFrame:
     print("avoiding curse of dimention")
     func_df = func_df.drop(columns=func_df.columns[func_cut_num_list])
@@ -99,8 +94,6 @@ max_epoch = 10
 net = Net().to(device)
 optimizer = torch.optim.Adam(net.parameters())
 criterion = F.cross_entropy
-
-print(f"max epoch: {max_epoch}")
 
 after_preprocessing = time.time()
 print(f"preprocessing time: {after_preprocessing - before_preprocessing}")
@@ -179,22 +172,9 @@ if net_bool:
 
 print(f"train loss: {train_loss_list[-1]}")
 print(f"test accuracy: {test_accuracy}")
-
-# plt_pickle = {
-#     "t-loss": train_loss_list, 
-#     "t-accuracy": train_accuracy_list, 
-#     "u-weather": using_weather_list, 
-#     "u-player": using_player_list, 
-#     "t-time": after_training - before_training, 
-#     "df-col": len(df.columns), 
-#     "df-row": len(df)
-# }
-# with open("tmp.pickle", "wb") as fp:
-#     pickle.dump(plt_pickle, fp)
-
 fig, ax = plt.subplots(ncols=1, nrows=2, facecolor="lightgray")
 
-plt.subplots_adjust(hspace=0.4, wspace=0.2)
+plt.subplots_adjust(hspace=0.4, wspace=0.2, right=.8)
 ax[0].set_title(f"train loss ( loss:{int(train_loss_list[-1])} )")
 ax[0].plot(train_loss_list, label="train", color="blue", linestyle="dashdot") 
 ax[1].set_title(f"prob ( test:{int(train_accuracy_list[-1]*100)}% train:{int(test_accuracy_list[-1]*100)}%)")
@@ -202,16 +182,10 @@ ax[1].plot(train_accuracy_list, label="train", color="blue", linestyle="dashdot"
 ax[1].plot(test_accuracy_list, label="test", color="red", linestyle="solid")
 ax[0].legend()
 ax[1].legend()
-# ax[0].text(1.1, 0.1, f"using weathr:\n\n{using_weather_list}")
-print(f"using weathr: {using_weather_list}")
-# ax[0].text(1.1, 0.6, f"using player:\n\n{using_player_list}")
-print(f"using player: {using_player_list}")
-# ax[1].text(1.1, 0.1, f"amount of explanatory variables:{len(df.columns) - 6}")
-print(f"amount of explanatory variables:{len(df.columns) - 6}")
-# ax[1].text(1.1, 0.3, f"number of training data:{len(df)} * {0.5} = {len(df)*0.5}")
-print(f"number of training data:{len(df)} * {0.5} = {len(df)*0.5}")
-# ax[1].text(1.1, 0.6, f"training time:\n{after_training - before_training}")
+ax[0].text(1.1, 0.1, f"using weathr:\n\n{using_weather_list}")
+ax[0].text(1.1, 0.6, f"using player:\n\n{using_player_list}")
+ax[1].text(1.1, 0.1, f"amount of explanatory variables:{len(df.columns) - 6}")
+ax[1].text(1.1, 0.3, f"number of training data:{len(df)} * {0.5} = {len(df)*0.5}")
+ax[1].text(1.1, 0.6, f"training time:\n{after_training - before_training}")
 plt.savefig(name_fig)
 plt.show()
-
-print(f"save picture as: {name_fig}")

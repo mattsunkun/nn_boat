@@ -1,6 +1,6 @@
 # step to hypotesis
+- python(pytorchなど)の環境を整える
+- inference.pyのREADMEに従いながらinference.pyを実行する．
 
-# ドキュメントはない．がんばれ辻もっちゃん
-
-# train-data/*が無い!!!
-train-data/*はファイルが大きすぎるため，git管理ができません．従って，何かしらの手段で直接送ります．
+# 備考
+train-data/*はファイルが大きすぎるため，git管理ができません．従って，git以外の何かしらの手段で与えます．

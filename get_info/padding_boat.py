@@ -213,6 +213,7 @@ def get_html(func_parameters: dict):
         fp.write(response_raceresult.text)
 
 if __name__ == "__main__":
-    params = {'rno': '01', 'jcd': '01', 'hd': '20221001'}
-    get_html(params)
-    print( create_data(params, 3) )
+    params = {'rno': '10', 'jcd': '08', 'hd': '20221112'}
+    # get_html(params) # まずhtmlをローカルに持ってくる
+    # ローカルのhtmlで欠損値を記述する．
+    print( create_data(params, 3) ) # printされたものを >> pbcopyする

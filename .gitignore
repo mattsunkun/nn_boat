@@ -1,2 +1,5 @@
 .venv/
 train-data/
+tmp*
+get_info/__pycache__
+neural_network/__pycache__
